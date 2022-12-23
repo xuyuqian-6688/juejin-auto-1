@@ -3,6 +3,26 @@ const { COOKIE } =  require('../utils/config.js');
 
 module.exports = function () {
   return {
+    /* 查询是否签到 */
+    queryCheck: function () {
+      return request({
+        url: 'https://api.juejin.cn/growth_api/v1/get_today_status',
+        method: 'get',
+        headers: {
+          cookie: COOKIE,
+        },
+      });
+    },
+    /* 查询是否签到 */
+    checkCount: function () {
+      return request({
+        url: 'https://api.juejin.cn/growth_api/v1/get_counts',
+        method: 'get',
+        headers: {
+          cookie: COOKIE,
+        },
+      });
+    },
     /**
      * 签到
      */

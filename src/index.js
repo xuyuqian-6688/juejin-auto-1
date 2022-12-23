@@ -4,29 +4,42 @@
 // const dotEnv = require('dotenv');
 // dotEnv.config('./env');
 
-const { COOKIE, TOKEN } =  require('./utils/config.js');
-const message =  require('./utils/message');
+const { COOKIE, TOKEN } = require('./utils/config.js');
+const message = require('./utils/message');
 const jueJinApi = require('./api/juejin')();
 const miningApi = require('./api/mining')();
 const jwt = require('jsonwebtoken');
 const firstData = require('./utils/first');
+let isCheckInToday = false
 
-if(!COOKIE) {
+if (!COOKIE) {
   message('获取不到cookie，请检查设置')
 } else {
   async function junJin() {
     try {
       // 先执行签到、抽奖以及沾喜气
-      await jueJinApi.checkIn(); // 抽奖一次
-      const drawResult = await jueJinApi.drawApi();
-      const dipParams = { lottery_history_id: '7052109119238438925' };
-      const dipResult = await jueJinApi.dipLucky(dipParams);
-      message(`抽奖成功，获得：${drawResult.lottery_name}; 获取幸运点${dipResult.dip_value}, 当前幸运点${dipResult.total_value}`);
+      const data = await jueJinApi.queryCheck()
+      isCheckInToday = data
+      console.log('')
+      console.log(`✍️  今天${isCheckInToday ? '已经完成' : '尚未进行'}签到 ✍️`);
+      console.log('')
+      if (!isCheckInToday) {
+        await jueJinApi.checkIn(); // 抽奖一次
+        const drawResult = await jueJinApi.drawApi();
+        const dipParams = { lottery_history_id: '7052109119238438925' };
+        const dipResult = await jueJinApi.dipLucky(dipParams);
+        message(`抽奖成功，获得：${drawResult.lottery_name}; 获取幸运点${dipResult.dip_value}, 当前幸运点${dipResult.total_value}`);
+      } else {
+        const {cont_count, sum_count} = await jueJinApi.checkCount()
+        console.log('')
+        console.log(`✍️  已连续签到${cont_count}天, 签到总数${sum_count}天 ✍️`);
+        console.log('')
+      }
     } catch (e) {
       message(`有异常，请手动操作,${e.message}`);
     }
   }
-  junJin().then(() => {});
+  junJin().then(() => { });
 }
 
 let juejinUid = '';
@@ -34,6 +47,7 @@ let juejinUid = '';
 if (!(COOKIE && TOKEN)) {
   message('获取不到游戏必须得COOKIE和TOKEN，请检查设置')
 } else {
+  if (isCheckInToday) return false
   let gameId = ''; // 发指令必须得gameId
   let deep = 0;
   let todayDiamond = 0;
@@ -53,7 +67,7 @@ if (!(COOKIE && TOKEN)) {
   }
   getInfo().then(() => {
     if (todayDiamond < todayLimitDiamond) {
-      playGame().then(() => {});
+      playGame().then(() => { });
     }
   });
 
@@ -108,7 +122,7 @@ if (!(COOKIE && TOKEN)) {
           message(`今日限制矿石${res.userInfo.todayLimitDiamond},已获取矿石${res.userInfo.todayDiamond}`)
         }
       });
-    } catch(e) {
+    } catch (e) {
       console.log(e);
       await sleep(3000);
       // 结束
